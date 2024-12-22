@@ -32,24 +32,34 @@ jobs:
     - name: Update existing Gist
       run: |
         echo "Updating existing Gist with ID: $GIST_ID"
+    
+        # 创建临时 JSON 文件
+        echo '{
+          "files": {
+            "config.yaml": {
+              "content": "'"$(cat config.yaml | sed 's/"/\\"/g')"'"
+            }
+          }
+        }' > payload.json
+    
+        # 调用 GitHub API 更新 Gist
         response=$(curl -s -X PATCH \
           -H "Authorization: token $GIST_TOKEN" \
           -H "Content-Type: application/json" \
-          -d '{
-            "files": {
-              "config.yaml": {
-                "content": "'"$(cat config.yaml)"'"
-              }
-            }
-          }' https://api.github.com/gists/$GIST_ID)
-
+          --data @payload.json \
+          https://api.github.com/gists/$GIST_ID)
+    
+        # 删除临时文件
+        rm payload.json
+    
+        # 检查更新结果
         gist_url=$(echo "$response" | jq -r '.html_url')
         if [ "$gist_url" == "null" ]; then
           echo "Error: Failed to update Gist"
           echo "Response: $response"
           exit 1
         fi
-
+    
         echo "Gist updated successfully: $gist_url"
       shell: bash
 
