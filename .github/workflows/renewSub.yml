@@ -29,17 +29,27 @@ jobs:
         fi
         echo "config.json generated successfully."
 
-    - name: Update existing Gist
+    - name: Upload config.json to Gist
       run: |
-        echo "Updating existing Gist with ID: $GIST_ID"
+        echo "Uploading config.json to Gist with ID: $GIST_ID"
+
+        # 读取 config.json 内容并构建 API 的 JSON 请求
+        jq -n --arg content "$(cat config.json)" '{
+          files: {
+            "config.json": {
+              "content": $content
+            }
+          }
+        }' > payload.json
 
         # 调用 GitHub Gist API 上传文件
         response=$(curl -s -X PATCH \
           -H "Authorization: token $GIST_TOKEN" \
           -H "Content-Type: application/json" \
-          --data @config.json \
+          --data @payload.json \
           https://api.github.com/gists/$GIST_ID)
 
+        # 检查返回结果
         gist_url=$(echo "$response" | jq -r '.html_url')
         if [ "$gist_url" == "null" ]; then
           echo "Error: Failed to update Gist"
@@ -48,7 +58,10 @@ jobs:
         fi
 
         echo "Gist updated successfully: $gist_url"
-      shell: bash
+  
+    - name: Cleanup temporary files
+      run: rm -f payload.json
+  
 
     - name: Success message
       run: echo "Workflow completed successfully!"
