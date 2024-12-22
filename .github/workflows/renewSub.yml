@@ -37,7 +37,7 @@ jobs:
         response=$(curl -s -X PATCH \
           -H "Authorization: token $GIST_TOKEN" \
           -H "Content-Type: application/json" \
-          --data @payload.json \
+          --data @config.json \
           https://api.github.com/gists/$GIST_ID)
 
         gist_url=$(echo "$response" | jq -r '.html_url')
