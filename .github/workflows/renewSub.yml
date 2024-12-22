@@ -2,7 +2,7 @@ name: Weekly Run and Update Gist
 
 on:
   schedule:
-    - cron: '0 0 * * 0'
+    - cron: '0 0 * * 0' # 每周日 UTC 时间 0:00
   workflow_dispatch:
 
 jobs:
@@ -24,7 +24,7 @@ jobs:
         chmod +x run.sh
         ./run.sh
 
-    - name: Check file exists
+    - name: Check if config.yaml exists
       run: |
         if [ ! -f config.yaml ]; then
           echo "Error: config.yaml not found!"
@@ -33,45 +33,40 @@ jobs:
         echo "config.yaml exists."
         ls -l config.yaml
 
-    - name: Upload to Gist
+    - name: Upload config.yaml to Gist
       run: |
-        # 使用base64编码文件内容
-        CONTENT=$(base64 -w 0 config.yaml)
-        
-        # 构建请求体
-        echo '{
-          "files": {
+        echo "Uploading config.yaml to Gist with ID: $GIST_ID"
+
+        # 使用 jq 构建 JSON 数据
+        jq -n --rawfile content config.yaml '{
+          files: {
             "config.yaml": {
-              "content": "'"$(base64 -d <<< "$CONTENT")"'"
+              "content": $content
             }
           }
         }' > payload.json
 
         # 发送请求并保存响应
-        HTTP_RESPONSE=$(curl -s -w "%{http_code}" \
+        response=$(curl -s -w "%{http_code}" \
           -X PATCH \
-          -H "Accept: application/vnd.github+json" \
-          -H "Authorization: Bearer $GIST_TOKEN" \
-          -H "X-GitHub-Api-Version: 2022-11-28" \
-          https://api.github.com/gists/$GIST_ID \
-          -d @payload.json)
-        
+          -H "Authorization: token $GIST_TOKEN" \
+          -H "Content-Type: application/json" \
+          --data @payload.json \
+          https://api.github.com/gists/$GIST_ID)
+
         # 提取状态码
-        HTTP_STATUS=${HTTP_RESPONSE: -3}
-        BODY=${HTTP_RESPONSE:0:${#HTTP_RESPONSE}-3}
-        
-        # 检查响应状态
-        if [ $HTTP_STATUS -eq 200 ]; then
-          echo "Successfully updated gist"
-          echo "Response: $BODY"
-        else
-          echo "Failed to update gist"
-          echo "Status code: $HTTP_STATUS"
-          echo "Response body: $BODY"
+        status_code=$(echo "$response" | tail -c 4)
+        body=$(echo "$response" | head -c -4)
+
+        if [ "$status_code" -ne 200 ]; then
+          echo "Failed to update Gist. Status code: $status_code"
+          echo "Response: $body"
           exit 1
         fi
 
-    - name: Cleanup
+        echo "Successfully updated Gist. Response: $body"
+
+    - name: Cleanup temporary files
       if: always()
       run: rm -f payload.json
 
