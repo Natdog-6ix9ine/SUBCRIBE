@@ -1,7 +1,8 @@
 #!/bin/bash
 # 示例订阅地址（请替换为你的订阅地址）
-SUBSCRIPTION_URL=$SUBLINK
-OUTPUT_FILE="config.yaml"
+# SUBSCRIPTION_URL=$SUBLINK
+SUBSCRIPTION_URL=https://65.75.209.22:61753/api/v1/client/subscribe?token=ffb8520f904cc33b85e0b098d89a4dd2
+OUTPUT_FILE="config.json"
 
 # 检查是否安装必要的工具
 check_dependency() {
