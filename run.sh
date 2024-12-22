@@ -1,15 +1,6 @@
 #!/bin/bash
-# 提示用户输入链接
-read -p "请输入订阅链接: " LINK
-
-# 检查输入
-if [ -z "$LINK" ]; then
-  echo "订阅链接不能为空"
-  exit 1
-fi
-
 # 示例订阅地址（请替换为你的订阅地址）
-SUBSCRIPTION_URL=$LINK
+SUBSCRIPTION_URL=$SUBLINK
 OUTPUT_FILE="config.yaml"
 
 # 检查是否安装必要的工具
