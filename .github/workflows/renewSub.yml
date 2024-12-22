@@ -23,49 +23,57 @@ jobs:
         echo "Running run.sh script..."
         chmod +x run.sh
         ./run.sh
-        if [ ! -f config.json ]; then
-          echo "Error: config.json not found!"
+
+    - name: Check file exists
+      run: |
+        if [ ! -f config.yaml ]; then
+          echo "Error: config.yaml not found!"
           exit 1
         fi
-        echo "config.json generated successfully."
+        echo "config.yaml exists."
+        ls -l config.yaml
 
-    - name: Upload config.json to Gist
+    - name: Upload to Gist
       run: |
-        echo "Uploading config.json to Gist with ID: $GIST_ID"
-
-        # 构建 JSON 请求文件，直接读取 config.json 内容
-        jq -n '{
-          files: {
-            "config.json": {
-              "content": input
+        # 读取文件内容
+        CONTENT=$(cat config.yaml)
+        
+        # 构建请求体
+        echo '{
+          "files": {
+            "config.yaml": {
+              "content": '"$(jq -R -s '.' <<< "$CONTENT")"'
             }
           }
-        }' --rawfile input config.json > payload.json
+        }' > payload.json
 
-        # 使用 curl 调用 GitHub Gist API 上传文件
-        response=$(curl -s -X PATCH \
-          -H "Authorization: token $GIST_TOKEN" \
-          -H "Content-Type: application/json" \
-          --data @payload.json \
-          https://api.github.com/gists/$GIST_ID)
-
-        # 检查返回结果
-        gist_url=$(echo "$response" | jq -r '.html_url')
-        if [ "$gist_url" == "null" ]; then
-          echo "Error: Failed to update Gist"
-          echo "Response: $response"
+        # 发送请求并保存响应
+        HTTP_RESPONSE=$(curl -s -w "%{http_code}" \
+          -X PATCH \
+          -H "Accept: application/vnd.github+json" \
+          -H "Authorization: Bearer $GIST_TOKEN" \
+          -H "X-GitHub-Api-Version: 2022-11-28" \
+          https://api.github.com/gists/$GIST_ID \
+          -d @payload.json)
+        
+        # 提取状态码
+        HTTP_STATUS=${HTTP_RESPONSE: -3}
+        BODY=${HTTP_RESPONSE:0:${#HTTP_RESPONSE}-3}
+        
+        # 检查响应状态
+        if [ $HTTP_STATUS -eq 200 ]; then
+          echo "Successfully updated gist"
+          echo "Response: $BODY"
+        else
+          echo "Failed to update gist"
+          echo "Status code: $HTTP_STATUS"
+          echo "Response body: $BODY"
           exit 1
         fi
 
-        echo "Gist updated successfully: $gist_url"
-  
-    - name: Cleanup temporary files
+    - name: Cleanup
+      if: always()
       run: rm -f payload.json
-
-  
-    - name: Cleanup temporary files
-      run: rm -f payload.json
-  
 
     - name: Success message
       run: echo "Workflow completed successfully!"
