@@ -2,17 +2,17 @@ name: Weekly Run and Update Gist
 
 on:
   schedule:
-    - cron: '0 0 * * 0' # 每周日 UTC 时间 0:00，即上海时间 8:00
-  workflow_dispatch: # 手动触发的选项
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
 
 jobs:
   run-script-and-update-gist:
     runs-on: ubuntu-latest
 
     env:
-      SUBLINK: ${{ secrets.SUBLINK }} # 从 GitHub Secrets 中获取 SUBLINK 值
-      GIST_TOKEN: ${{ secrets.GIST_TOKEN }} # 从 GitHub Secrets 中获取 Gist Token
-      GIST_ID: ${{ secrets.GIST_ID }} # 从 GitHub Secrets 中获取目标 Gist ID
+      SUBLINK: ${{ secrets.SUBLINK }}
+      GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
+      GIST_ID: ${{ secrets.GIST_ID }}
 
     steps:
     - name: Checkout repository
@@ -35,14 +35,14 @@ jobs:
 
     - name: Upload to Gist
       run: |
-        # 读取文件内容
-        CONTENT=$(cat config.yaml)
+        # 使用base64编码文件内容
+        CONTENT=$(base64 -w 0 config.yaml)
         
         # 构建请求体
         echo '{
           "files": {
             "config.yaml": {
-              "content": '"$(jq -R -s '.' <<< "$CONTENT")"'
+              "content": "'"$(base64 -d <<< "$CONTENT")"'"
             }
           }
         }' > payload.json
