@@ -33,16 +33,16 @@ jobs:
       run: |
         echo "Uploading config.json to Gist with ID: $GIST_ID"
 
-        # 读取 config.json 内容并构建 API 的 JSON 请求
-        jq -n --arg content "$(cat config.json)" '{
+        # 构建 JSON 请求文件，直接读取 config.json 内容
+        jq -n '{
           files: {
             "config.json": {
-              "content": $content
+              "content": input
             }
           }
-        }' > payload.json
+        }' --rawfile input config.json > payload.json
 
-        # 调用 GitHub Gist API 上传文件
+        # 使用 curl 调用 GitHub Gist API 上传文件
         response=$(curl -s -X PATCH \
           -H "Authorization: token $GIST_TOKEN" \
           -H "Content-Type: application/json" \
@@ -58,6 +58,10 @@ jobs:
         fi
 
         echo "Gist updated successfully: $gist_url"
+  
+    - name: Cleanup temporary files
+      run: rm -f payload.json
+
   
     - name: Cleanup temporary files
       run: rm -f payload.json
