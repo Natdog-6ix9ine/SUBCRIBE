@@ -33,11 +33,11 @@ jobs:
       run: |
         echo "Updating existing Gist with ID: $GIST_ID"
     
-        # 创建临时 JSON 文件
-        echo '{
-          "files": {
+        # 创建临时 JSON 文件，保留换行符
+        jq -n --arg content "$(cat config.yaml)" '{
+          files: {
             "config.yaml": {
-              "content": "'"$(cat config.yaml | sed 's/"/\\"/g')"'"
+              content: $content
             }
           }
         }' > payload.json
@@ -62,6 +62,6 @@ jobs:
     
         echo "Gist updated successfully: $gist_url"
       shell: bash
-
+      
     - name: Success message
       run: echo "Workflow completed successfully!"
