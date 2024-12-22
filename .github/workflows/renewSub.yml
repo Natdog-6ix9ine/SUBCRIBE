@@ -23,11 +23,11 @@ jobs:
         echo "Running run.sh script..."
         chmod +x run.sh
         ./run.sh
-        if [ ! -f config.yaml ]; then
-          echo "Error: config.yaml not found!"
+        if [ ! -f config.json ]; then
+          echo "Error: config.json not found!"
           exit 1
         fi
-        echo "config.yaml generated successfully."
+        echo "config.json generated successfully."
 
     - name: Update existing Gist
       run: |
